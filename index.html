@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MORENA · ESTRUCTURA — Mapa de Dispositivos</title>
+<title>MORENA · Control MDM Knox — Mapa de Dispositivos</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -256,14 +256,27 @@
 <body>
 
 <!-- HEADER -->
-<div class="logo" style="background:none;">
-  <img src="MORENA.png" 
-       style="height:52px; width:auto; display:block;" 
-       alt="Logo Morena"/>
-</div>
+<div id="header">
+  <div class="logo">
+    <!-- Sol azteca simplificado Morena -->
+    <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="17" cy="17" r="16" fill="#6D1130" stroke="white" stroke-width="1.5"/>
+      <circle cx="17" cy="17" r="7" fill="white"/>
+      <circle cx="17" cy="17" r="4" fill="#6D1130"/>
+      <!-- rayos -->
+      <line x1="17" y1="2" x2="17" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="17" y1="28" x2="17" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="2" y1="17" x2="6" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="28" y1="17" x2="32" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="6.5" y1="6.5" x2="9.3" y2="9.3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="24.7" y1="24.7" x2="27.5" y2="27.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="27.5" y1="6.5" x2="24.7" y2="9.3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="9.3" y1="24.7" x2="6.5" y2="27.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
   <div class="titulo">
-    <h1>TENANT ·  ESTRUCTURA</h1>
-    <p>Ubicación de tabletas MORENA ·</p>
+    <h1>MORENA · Sistema de Control MDM Knox</h1>
+    <p>Rastreo y gestión de tabletas Samsung · República Mexicana</p>
   </div>
   <div class="ultima-act">
     <strong id="txt-fecha">—</strong>
@@ -299,13 +312,6 @@
     <div class="stat-info">
       <span class="stat-label">Estados</span>
       <span class="stat-sub">Con cobertura</span>
-    </div>
-  </div>
-  <div class="stat">
-    <div class="stat-num" id="st-municipios">0</div>
-    <div class="stat-info">
-      <span class="stat-label">Municipios</span>
-      <span class="stat-sub">Alcance territorial</span>
     </div>
   </div>
 </div>
@@ -376,14 +382,13 @@
   <div id="modal-box">
     <h2>Formato del archivo CSV</h2>
     <p>El archivo CSV debe tener las siguientes columnas en la primera fila (encabezados):</p>
-    <pre>imei,serie,latitud,longitud,estado,municipio,seccion,estatus
-354123456789012,R58N12ABCDE,19.4326,-99.1332,CDMX,Cuauhtémoc,1042,activo
-354234567890123,R58N12FGHIJ,20.6737,-103.344,Jalisco,Guadalajara,0312,offline
-354345678901234,R58N12KLMNO,25.6866,-100.316,Nuevo León,Monterrey,0894,advertencia</pre>
-    <p><strong>Columnas obligatorias:</strong> imei, serie, latitud, longitud, estado, municipio</p>
+    <pre>imei,serie,latitud,longitud,estado,estatus
+354123456789012,R58N12ABCDE,19.4326,-99.1332,CDMX,activo
+354234567890123,R58N12FGHIJ,20.6737,-103.344,Jalisco,offline
+354345678901234,R58N12KLMNO,25.6866,-100.316,Nuevo León,advertencia</pre>
+    <p><strong>Columnas obligatorias:</strong> imei, serie, latitud, longitud, estado</p>
     <p><strong>Columna estatus:</strong> activo | offline | advertencia (si se omite, se asume "activo")</p>
-    <p><strong>Columna seccion:</strong> número de sección electoral INE (opcional)</p>
-    <p>También puede cargar archivos <strong>.xlsx</strong> — se convertirán automáticamente.</p>
+    <p>También puede cargar el archivo <strong>tabletas_mapa_listo.csv</strong> generado previamente.</p>
     <button class="btn-cerrar" onclick="document.getElementById('modal-csv').classList.remove('visible')">Entendido</button>
   </div>
 </div>
@@ -466,10 +471,6 @@ function makePopup(d) {
             <td style="font-family:monospace;color:#333;">${d.imei}</td></tr>
         <tr><td style="color:#888;padding:2px 0;">Estado</td>
             <td style="color:#333;">${d.estado}</td></tr>
-        <tr><td style="color:#888;padding:2px 0;">Municipio</td>
-            <td style="color:#333;">${d.municipio}</td></tr>
-        ${d.seccion ? `<tr><td style="color:#888;padding:2px 0;">Sección</td>
-            <td style="color:#6D1130;font-weight:600;">${d.seccion}</td></tr>` : ''}
         <tr><td style="color:#888;padding:2px 0;">Coordenadas</td>
             <td style="font-family:monospace;font-size:10px;color:#555;">${(+d.lat).toFixed(4)}, ${(+d.lng).toFixed(4)}</td></tr>
       </table>
@@ -500,7 +501,7 @@ function renderDispositivos(lista) {
         <span class="badge ${d.estatus || 'activo'}">${d.estatus || 'activo'}</span>
       </div>
       <div class="card-imei">IMEI: ${d.imei}</div>
-      <div class="card-lugar"><span>📍</span> ${d.municipio}, ${d.estado}${d.seccion ? ` · Secc. ${d.seccion}` : ''}</div>`;
+      <div class="card-lugar"><span>📍</span> ${d.estado}</div>`;
     card.onclick = () => {
       map.setView([+d.lat, +d.lng], 13);
       marker.openPopup();
@@ -520,12 +521,10 @@ function actualizarStats(lista) {
   const activos = lista.filter(d => d.estatus === 'activo' || !d.estatus).length;
   const offline = lista.filter(d => d.estatus === 'offline').length;
   const estados = [...new Set(lista.map(d => d.estado))].length;
-  const municipios = [...new Set(lista.map(d => d.municipio))].length;
   document.getElementById('st-total').textContent = lista.length;
   document.getElementById('st-activos').textContent = activos;
   document.getElementById('st-offline').textContent = offline;
   document.getElementById('st-estados').textContent = estados;
-  document.getElementById('st-municipios').textContent = municipios;
   document.getElementById('txt-fecha').textContent = new Date().toLocaleString('es-MX');
 
   // Poblar filtro estados
@@ -541,7 +540,7 @@ function filtrarDispositivos(texto) {
   const estado = document.getElementById('filtro-estado').value;
   const estatus = document.getElementById('filtro-estatus').value;
   let lista = todosDispositivos.filter(d => {
-    const coincideQ = !q || [d.imei, d.serie, d.estado, d.municipio, d.seccion || '']
+    const coincideQ = !q || [d.imei, d.serie, d.estado]
       .some(v => (v || '').toLowerCase().includes(q));
     const coincideEstado = !estado || d.estado === estado;
     const coincideEstatus = !estatus || (d.estatus || 'activo') === estatus;
@@ -569,7 +568,7 @@ document.getElementById('file-csv').addEventListener('change', function(e) {
 });
 
 function procesarDatos(datos, nombre) {
-  const campos = ['imei','serie','latitud','longitud','estado','municipio'];
+  const campos = ['imei','serie','latitud','longitud','estado'];
   const keys = datos.length > 0 ? Object.keys(datos[0]).map(k => k.toLowerCase().trim()) : [];
 
   if (!campos.every(c => keys.some(k => k.includes(c.slice(0,4))))) {
@@ -581,14 +580,12 @@ function procesarDatos(datos, nombre) {
     const r = {};
     Object.keys(row).forEach(k => r[k.toLowerCase().trim()] = row[k]);
     return {
-      imei:      r.imei || r['imei'] || '',
-      serie:     r.serie || r['serie'] || '',
-      lat:       parseFloat(r.latitud || r.lat || 0),
-      lng:       parseFloat(r.longitud || r.lng || r.lon || 0),
-      estado:    r.estado || '',
-      municipio: r.municipio || '',
-      seccion:   r.seccion || r['sección'] || r.seccion_electoral || '',
-      estatus:   (r.estatus || r.status || 'activo').toLowerCase()
+      imei:    r.imei || '',
+      serie:   r.serie || '',
+      lat:     parseFloat(r.latitud || r.lat || 0),
+      lng:     parseFloat(r.longitud || r.lng || r.lon || 0),
+      estado:  r.estado || '',
+      estatus: (r.estatus || r.status || 'activo').toLowerCase()
     };
   }).filter(d => d.lat !== 0 && d.lng !== 0);
 
@@ -608,21 +605,21 @@ function procesarDatos(datos, nombre) {
 // ── DATOS DEMO ─────────────────────────────────────────────────
 function cargarDatosDemo() {
   const demo = [
-    { imei:'354123456789012', serie:'R58N12ABCDE', lat:19.4326, lng:-99.1332, estado:'CDMX',         municipio:'Cuauhtémoc',      seccion:'1042', estatus:'activo'      },
-    { imei:'354234567890123', serie:'R58N12FGHIJ', lat:20.6737, lng:-103.344, estado:'Jalisco',       municipio:'Guadalajara',     seccion:'0312', estatus:'activo'      },
-    { imei:'354345678901234', serie:'R58N12KLMNO', lat:25.6866, lng:-100.316, estado:'Nuevo León',    municipio:'Monterrey',       seccion:'0894', estatus:'activo'      },
-    { imei:'354456789012345', serie:'R58N12PQRST', lat:21.1619, lng:-86.8515, estado:'Q. Roo',        municipio:'Benito Juárez',   seccion:'2211', estatus:'activo'      },
-    { imei:'354567890123456', serie:'R58N12UVWXY', lat:17.0732, lng:-96.7266, estado:'Oaxaca',        municipio:'Oaxaca de Juárez',seccion:'0567', estatus:'offline'     },
-    { imei:'354678901234567', serie:'R58N12ZABCD', lat:19.7069, lng:-101.195, estado:'Michoacán',     municipio:'Morelia',         seccion:'1788', estatus:'activo'      },
-    { imei:'354789012345678', serie:'R58N13ABCDE', lat:20.9674, lng:-89.5926, estado:'Yucatán',       municipio:'Mérida',          seccion:'0445', estatus:'activo'      },
-    { imei:'354890123456789', serie:'R58N13FGHIJ', lat:28.6353, lng:-106.089, estado:'Chihuahua',     municipio:'Chihuahua',       seccion:'3301', estatus:'offline'     },
-    { imei:'354901234567890', serie:'R58N13KLMNO', lat:16.7521, lng:-93.1151, estado:'Chiapas',       municipio:'Tuxtla Gutiérrez',seccion:'0712', estatus:'activo'      },
-    { imei:'355012345678901', serie:'R58N13PQRST', lat:22.1565, lng:-100.985, estado:'San Luis Potosí',municipio:'SLP',            seccion:'1234', estatus:'advertencia' },
-    { imei:'355123456789012', serie:'R58N13UVWXY', lat:29.0729, lng:-110.956, estado:'Sonora',        municipio:'Hermosillo',      seccion:'2089', estatus:'activo'      },
-    { imei:'355234567890123', serie:'R58N13ZABCD', lat:18.9242, lng:-99.2216, estado:'Morelos',       municipio:'Cuernavaca',      seccion:'0998', estatus:'activo'      },
-    { imei:'355345678901234', serie:'R58N14ABCDE', lat:32.5027, lng:-117.003, estado:'Baja California',municipio:'Tijuana',        seccion:'4401', estatus:'activo'      },
-    { imei:'355456789012345', serie:'R58N14FGHIJ', lat:19.1738, lng:-96.1342, estado:'Veracruz',      municipio:'Veracruz',        seccion:'0234', estatus:'offline'     },
-    { imei:'355567890123456', serie:'R58N14KLMNO', lat:26.9220, lng:-101.420, estado:'Coahuila',      municipio:'Torreón',         seccion:'1122', estatus:'activo'      },
+    { imei:'354123456789012', serie:'R58N12ABCDE', lat:19.4326, lng:-99.1332,  estado:'CDMX',              estatus:'activo'      },
+    { imei:'354234567890123', serie:'R58N12FGHIJ', lat:20.6737, lng:-103.344,  estado:'Jalisco',            estatus:'activo'      },
+    { imei:'354345678901234', serie:'R58N12KLMNO', lat:25.6866, lng:-100.316,  estado:'Nuevo León',         estatus:'activo'      },
+    { imei:'354456789012345', serie:'R58N12PQRST', lat:21.1619, lng:-86.8515,  estado:'Quintana Roo',       estatus:'activo'      },
+    { imei:'354567890123456', serie:'R58N12UVWXY', lat:17.0732, lng:-96.7266,  estado:'Oaxaca',             estatus:'offline'     },
+    { imei:'354678901234567', serie:'R58N12ZABCD', lat:19.7069, lng:-101.195,  estado:'Michoacán',          estatus:'activo'      },
+    { imei:'354789012345678', serie:'R58N13ABCDE', lat:20.9674, lng:-89.5926,  estado:'Yucatán',            estatus:'activo'      },
+    { imei:'354890123456789', serie:'R58N13FGHIJ', lat:28.6353, lng:-106.089,  estado:'Chihuahua',          estatus:'offline'     },
+    { imei:'354901234567890', serie:'R58N13KLMNO', lat:16.7521, lng:-93.1151,  estado:'Chiapas',            estatus:'activo'      },
+    { imei:'355012345678901', serie:'R58N13PQRST', lat:22.1565, lng:-100.985,  estado:'San Luis Potosí',    estatus:'advertencia' },
+    { imei:'355123456789012', serie:'R58N13UVWXY', lat:29.0729, lng:-110.956,  estado:'Sonora',             estatus:'activo'      },
+    { imei:'355234567890123', serie:'R58N13ZABCD', lat:18.9242, lng:-99.2216,  estado:'Morelos',            estatus:'activo'      },
+    { imei:'355345678901234', serie:'R58N14ABCDE', lat:32.5027, lng:-117.003,  estado:'Baja California',    estatus:'activo'      },
+    { imei:'355456789012345', serie:'R58N14FGHIJ', lat:19.1738, lng:-96.1342,  estado:'Veracruz',           estatus:'offline'     },
+    { imei:'355567890123456', serie:'R58N14KLMNO', lat:26.9220, lng:-101.420,  estado:'Coahuila',           estatus:'activo'      },
   ];
   todosDispositivos = demo;
   actualizarStats(demo);

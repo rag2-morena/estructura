@@ -38,12 +38,8 @@
     box-shadow: 0 2px 12px rgba(109,17,48,0.10);
   }
   #header .logo {
-    width: 48px; height: 48px; flex-shrink: 0;
-    background: var(--vino);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-  }
-  #header .logo svg { width: 34px; height: 34px; }
+  flex-shrink: 0;
+}
   #header .titulo { flex: 1; }
   #header .titulo h1 {
     font-family: 'Barlow Condensed', sans-serif;
@@ -265,23 +261,7 @@
 
 <!-- HEADER -->
 <div id="header">
-  <div class="logo">
-    <!-- Sol azteca simplificado Morena -->
-    <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="17" cy="17" r="16" fill="#6D1130" stroke="white" stroke-width="1.5"/>
-      <circle cx="17" cy="17" r="7" fill="white"/>
-      <circle cx="17" cy="17" r="4" fill="#6D1130"/>
-      <!-- rayos -->
-      <line x1="17" y1="2" x2="17" y2="6" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="17" y1="28" x2="17" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="2" y1="17" x2="6" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="28" y1="17" x2="32" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="6.5" y1="6.5" x2="9.3" y2="9.3" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="24.7" y1="24.7" x2="27.5" y2="27.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="27.5" y1="6.5" x2="24.7" y2="9.3" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      <line x1="9.3" y1="24.7" x2="6.5" y2="27.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </div>
+  <img class="logo" src="MORENA.png" style="height:46px; width:auto; border-radius:4px;" alt="Logo MORENA"/>
   <div class="titulo">
     <h1>MORENA · ESTRUCTURA</h1>
     <p>Monitoreo Tabletas COT ·</p>

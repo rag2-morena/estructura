@@ -154,7 +154,7 @@ let map,markersLayer,todosDispositivos=[],markerRefs={};
 function initMap(){
   map=L.map('map',{zoomControl:true}).setView([27.2,-101.8],7);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-    attribution:'© OpenStreetMap © CARTO',maxZoom:18,subdomains:'abcd'
+    attribution:'',maxZoom:18,subdomains:'abcd'
   }).addTo(map);
   markersLayer=L.layerGroup().addTo(map);
   fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json')

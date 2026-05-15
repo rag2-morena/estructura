@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MORENA · Tenant Estructura — Mapa de Tabletas por Estado</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --vino:       #6D1130;
+  --vino-dark:  #4a0c20;
+  --vino-light: #f5e8ec;
+  --blanco:     #ffffff;
+  --gris-suave: #f7f4f5;
+  --gris-borde: #e0d4d8;
+  --gris-texto: #5a4a50;
+  --verde:      #1a7a45;
+  --rojo:       #b83232;
+  --amarillo:   #c97a00;
+  --gris-dark:  #555555;
+  --naranja:    #d45500;
+  --azul:       #1a5fa8;
+  --azul-light: #e8f0fb;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Barlow',sans-serif;background:var(--gris-suave);color:#222;overflow:hidden;}
+
+/* ── HEADER ── */
+#header{
+  background:var(--blanco);border-bottom:4px solid var(--vino);
+  padding:0 20px;display:flex;align-items:center;gap:14px;
+  height:66px;position:sticky;top:0;z-index:1000;
+  box-shadow:0 2px 12px rgba(109,17,48,0.10);
+}
+#header img.logo{height:46px;width:auto;object-fit:contain;flex-shrink:0;border-radius:4px;}
+#header .titulo h1{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;color:var(--vino);letter-spacing:0.5px;text-transform:uppercase;}
+#header .titulo p{font-size:11px;color:var(--gris-texto);margin-top:2px;}
+#header .ultima-act{margin-left:auto;text-align:right;font-size:11px;color:var(--gris-texto);line-height:1.6;}
+#header .ultima-act strong{color:var(--vino);font-size:12px;display:block;}
+
+/* ── STATS ── */
+#stats{background:var(--vino);display:flex;padding:0 20px;}
+.stat{flex:1;padding:8px 10px;border-right:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;gap:8px;}
+.stat:last-child{border-right:none;}
+.stat-num{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:white;line-height:1;}
+.stat-info{display:flex;flex-direction:column;}
+.stat-label{font-size:9px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;}
+.stat-sub{font-size:9px;color:rgba(255,255,255,0.85);margin-top:1px;}
+.stat-num.v51-alert{color:#ffd966;}
+
+/* ── TOOLBAR ── */
+#toolbar{
+  background:var(--blanco);border-bottom:1px solid var(--gris-borde);
+  padding:7px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+label.btn-upload{
+  background:var(--vino);color:white;padding:6px 14px;border-radius:6px;
+  font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:background 0.2s;flex-shrink:0;font-family:'Barlow',sans-serif;
+}
+label.btn-upload:hover{background:var(--vino-dark);}
+input[type="file"]{display:none;}
+.btn-demo{
+  background:transparent;border:1px solid var(--vino);color:var(--vino);
+  padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;font-family:'Barlow',sans-serif;
+}
+.btn-demo:hover{background:var(--vino-light);}
+#toolbar input[type="text"],#toolbar select{
+  border:1px solid var(--gris-borde);border-radius:6px;
+  padding:5px 9px;font-size:12px;font-family:'Barlow',sans-serif;
+  color:#333;background:var(--gris-suave);outline:none;
+}
+#toolbar input[type="text"]{width:190px;}
+#toolbar input:focus,#toolbar select:focus{border-color:var(--vino);}
+.sep{width:1px;height:24px;background:var(--gris-borde);flex-shrink:0;}
+.info-csv{
+  margin-left:auto;font-size:11px;color:var(--gris-texto);
+  background:var(--vino-light);padding:4px 10px;border-radius:6px;
+  border:1px solid var(--gris-borde);white-space:nowrap;
+}
+/* filtro V51 */
+.btn-v51{
+  background:transparent;border:1.5px solid var(--azul);color:var(--azul);
+  padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;font-family:'Barlow',sans-serif;display:flex;align-items:center;gap:5px;
+}
+.btn-v51.active{background:var(--azul);color:white;}
+.btn-v51:hover{background:var(--azul-light);}
+.btn-v51.active:hover{background:#1451a0;}
+
+/* ── LAYOUT ── */
+#main{display:flex;height:calc(100vh - 66px - 44px - 43px);min-height:400px;}
+#map{flex:1;min-width:0;position:relative;}
+
+.leaflet-popup-content-wrapper{border-radius:8px!important;border:2px solid var(--vino)!important;box-shadow:0 4px 20px rgba(109,17,48,0.15)!important;padding:0!important;}
+.leaflet-popup-content{margin:0!important;}
+.leaflet-popup-tip{background:var(--vino)!important;}
+
+/* Leyenda */
+.leyenda{
+  position:absolute;bottom:14px;left:14px;z-index:900;
+  background:white;border:1.5px solid var(--vino);border-radius:8px;
+  padding:9px 13px;font-size:11px;box-shadow:0 2px 10px rgba(109,17,48,0.12);
+}
+.leyenda h4{font-family:'Barlow Condensed',sans-serif;color:var(--vino);font-size:12px;font-weight:700;text-transform:uppercase;margin-bottom:6px;}
+.ley-row{display:flex;align-items:center;gap:7px;margin-bottom:3px;font-size:11px;}
+.ley-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ley-sep{height:1px;background:var(--gris-borde);margin:5px 0;}
+
+/* ── PANEL ── */
+#panel{
+  width:316px;flex-shrink:0;background:var(--blanco);
+  border-left:1px solid var(--gris-borde);display:flex;flex-direction:column;overflow:hidden;
+}
+#panel-header{padding:10px 14px;border-bottom:2px solid var(--vino);background:var(--vino-light);}
+#panel-header h3{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--vino);text-transform:uppercase;letter-spacing:0.5px;}
+#panel-header p{font-size:10px;color:var(--gris-texto);margin-top:2px;}
+#lista-dispositivos{flex:1;overflow-y:auto;padding:7px;}
+
+/* ── TARJETA ── */
+.dispositivo-card{
+  border:1px solid var(--gris-borde);border-radius:8px;
+  padding:10px 11px;margin-bottom:6px;cursor:pointer;
+  transition:all 0.16s;background:var(--blanco);
+  border-left:4px solid var(--gris-borde);
+}
+.dispositivo-card:hover{border-color:var(--vino);background:var(--vino-light);}
+.dispositivo-card.activo{border-left-color:var(--verde);}
+.dispositivo-card.offline{border-left-color:var(--rojo);}
+.dispositivo-card.caducada{border-left-color:var(--gris-dark);}
+.dispositivo-card.advertencia{border-left-color:var(--amarillo);}
+.dispositivo-card.robado{border-left-color:var(--naranja);}
+.dispositivo-card.sin-gps{opacity:0.78;}
+.dispositivo-card.selected{outline:2px solid var(--vino);}
+.dispositivo-card.v51-pendiente{box-shadow:0 0 0 1.5px var(--azul) inset;}
+
+.card-dias{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:700;padding:2px 9px;
+  border-radius:20px;margin-bottom:5px;
+}
+.card-dias.ok{background:#e6f4ec;color:var(--verde);}
+.card-dias.warn{background:#fff4e0;color:var(--amarillo);}
+.card-dias.danger{background:#faeaea;color:var(--rojo);}
+.card-dias.vencida{background:#eeeeee;color:var(--gris-dark);}
+
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.card-estado{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--vino);}
+
+.badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;}
+.badge.activo{background:#e6f4ec;color:var(--verde);}
+.badge.offline{background:#faeaea;color:var(--rojo);}
+.badge.caducada{background:#eeeeee;color:var(--gris-dark);}
+.badge.advertencia{background:#fff4e0;color:var(--amarillo);}
+.badge.robado{background:#fde8d9;color:var(--naranja);}
+.badge.v51{background:var(--azul-light);color:var(--azul);font-size:8px;}
+
+.badge-nogps{font-size:8px;font-weight:600;padding:1px 5px;border-radius:4px;background:#eee;color:#888;margin-left:4px;}
+
+.card-datos{display:grid;grid-template-columns:54px 1fr;gap:2px 8px;font-size:10px;margin-top:4px;}
+.card-lbl{color:#bbb;font-size:9px;text-transform:uppercase;letter-spacing:0.3px;padding-top:1px;}
+.card-val{font-family:'Source Code Pro',monospace;font-size:10px;color:#333;word-break:break-all;}
+.card-val.lugar{font-family:'Barlow',sans-serif;}
+.card-val.v51-pend{font-family:'Barlow',sans-serif;color:var(--azul);font-weight:600;font-size:9px;}
+
+/* ── FOOTER ── */
+#footer{
+  background:var(--blanco);border-top:3px solid var(--vino);
+  padding:6px 20px;display:flex;align-items:center;justify-content:space-between;
+  font-size:10px;color:var(--gris-texto);
+}
+#footer .marca{color:var(--vino);font-weight:700;font-size:11px;}
+
+/* ── MODAL ── */
+#modal-csv{display:none;position:fixed;inset:0;background:rgba(74,12,32,0.55);z-index:9999;align-items:center;justify-content:center;}
+#modal-csv.visible{display:flex;}
+#modal-box{background:white;border-radius:12px;border:2px solid var(--vino);padding:24px 28px;max-width:560px;width:90%;box-shadow:0 8px 40px rgba(109,17,48,0.25);}
+#modal-box h2{font-family:'Barlow Condensed',sans-serif;color:var(--vino);font-size:18px;text-transform:uppercase;margin-bottom:12px;}
+#modal-box pre{background:var(--gris-suave);border:1px solid var(--gris-borde);border-radius:6px;padding:10px;font-size:10px;font-family:'Source Code Pro',monospace;overflow-x:auto;color:#333;line-height:1.7;margin:10px 0;}
+#modal-box p{font-size:12px;color:#444;line-height:1.6;margin-bottom:6px;}
+.btn-cerrar{margin-top:12px;background:var(--vino);color:white;border:none;padding:8px 20px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;}
+.btn-cerrar:hover{background:var(--vino-dark);}
+
+/* ── NOTIF ── */
+#notif{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--vino);color:white;padding:9px 20px;border-radius:8px;font-size:12px;font-weight:600;z-index:9998;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+#notif.show{opacity:1;}
+
+/* pantalla de bienvenida cuando no hay datos */
+#splash{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(247,244,245,0.92);z-index:500;pointer-events:none;}
+#splash.oculto{display:none;}
+#splash p{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:600;color:var(--vino);text-align:center;}
+#splash small{font-size:11px;color:var(--gris-texto);}
+
+@media(max-width:768px){#panel{display:none;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <img class="logo" src="data:image/png;base64,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" alt="Logo MORENA"/>
+  <div class="titulo">
+    <h1>MORENA · Tenant Estructura — Mapa de Tabletas</h1>
+    <p>Monitoreo por entidad · Cargue el CSV de su estado</p>
+  </div>
+  <div class="ultima-act">
+    <strong id="txt-fecha">—</strong>
+    Última actualización
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stat">
+    <div class="stat-num" id="st-total">0</div>
+    <div class="stat-info"><span class="stat-label">Total</span><span class="stat-sub">Tabletas</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="st-gps">0</div>
+    <div class="stat-info"><span class="stat-label">Con GPS</span><span class="stat-sub">Ubicadas</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="st-sin-gps">0</div>
+    <div class="stat-info"><span class="stat-label">Sin GPS</span><span class="stat-sub">Solo en lista</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num v51-alert" id="st-v51">0</div>
+    <div class="stat-info"><span class="stat-label">V51 Pendiente</span><span class="stat-sub">Asignada / No inst.</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="st-robados">0</div>
+    <div class="stat-info"><span class="stat-label">Robados/Extr.</span><span class="stat-sub">Con incidencia</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="st-caducada">0</div>
+    <div class="stat-info"><span class="stat-label">Lic. Caducada</span><span class="stat-sub">Sin renovar</span></div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <label class="btn-upload" for="file-csv">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Cargar CSV del Estado
+  </label>
+  <input type="file" id="file-csv" accept=".csv"/>
+
+  <div class="sep"></div>
+
+  <input type="text" id="buscar" placeholder="Buscar IMEI, serie, etiqueta..." oninput="filtrar()"/>
+
+  <select id="f-estatus" onchange="filtrar()">
+    <option value="">Todos los estatus</option>
+    <option value="activo">Activo (0–3 días)</option>
+    <option value="offline">Offline (4+ días)</option>
+    <option value="caducada">Licencia Caducada</option>
+    <option value="robado">Robado / Extraviado</option>
+  </select>
+
+  <select id="f-gps" onchange="filtrar()">
+    <option value="">Con y sin GPS</option>
+    <option value="con">Solo con GPS</option>
+    <option value="sin">Solo sin GPS</option>
+  </select>
+
+  <button class="btn-v51" id="btn-v51" onclick="toggleV51()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Solo V51 Pendiente
+  </button>
+
+  <div class="sep"></div>
+
+  <button class="btn-demo" onclick="document.getElementById('modal-csv').classList.add('visible')" style="border-color:#888;color:#666;">¿Formato CSV?</button>
+
+  <span class="info-csv" id="info-csv">Sin datos · Cargue el archivo CSV de su estado</span>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="map">
+    <div id="splash">
+      <p>Cargue el CSV de su estado para visualizar las tabletas</p>
+      <small>Utilice el botón "Cargar CSV del Estado" en la barra superior</small>
+    </div>
+    <div class="leyenda">
+      <h4>Leyenda</h4>
+      <div class="ley-row"><div class="ley-dot" style="background:#1a7a45"></div><span>Activo (0–3 días)</span></div>
+      <div class="ley-row"><div class="ley-dot" style="background:#b83232"></div><span>Offline (4+ días)</span></div>
+      <div class="ley-row"><div class="ley-dot" style="background:#555555"></div><span>Lic. Caducada</span></div>
+      <div class="ley-row"><div class="ley-dot" style="background:#d45500"></div><span>Robado / Extraviado</span></div>
+      <div class="ley-sep"></div>
+      <div class="ley-row">
+        <div style="width:10px;height:10px;border-radius:50%;border:2.5px solid #1a5fa8;flex-shrink:0;"></div>
+        <span style="color:#1a5fa8;font-weight:600;">V51 Pendiente</span>
+      </div>
+    </div>
+  </div>
+  <div id="panel">
+    <div id="panel-header">
+      <h3 id="panel-estado-title">Tabletas</h3>
+      <p id="panel-count">Cargue un CSV para comenzar</p>
+    </div>
+    <div id="lista-dispositivos"></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <span>Monitoreo MDM · Tenant Estructura · República Mexicana</span>
+  <span class="marca">MORENA ·</span>
+  <span id="ft-count">0 tabletas</span>
+</div>
+
+<!-- MODAL -->
+<div id="modal-csv">
+  <div id="modal-box">
+    <h2>Formato del archivo CSV</h2>
+    <p>Cargue el archivo <strong>NN_Estado.csv</strong> correspondiente a su entidad. Columnas incluidas:</p>
+    <pre>Estado,Etiqueta del dispositivo,IMEI/MEID,Número de serie,Número de teléfono móvil,
+Visto por última vez,lat,lng,gps_ts,v51_asignada,v51_no_instalada,incidencia</pre>
+    <p><strong>Campos clave:</strong></p>
+    <p>· <strong>lat / lng</strong>: coordenadas GPS extraídas del MDM (vacías = sin ubicación)</p>
+    <p>· <strong>v51_asignada</strong>: SI / NO — si tiene asignada la app Sumate_V51-PROD-V6</p>
+    <p>· <strong>v51_no_instalada</strong>: SI — indica que la app aún no está instalada</p>
+    <p>· <strong>incidencia</strong>: ROBADO | EXTRAVIADO | OFFLINE | (vacío = normal)</p>
+    <p style="margin-top:8px;font-size:11px;color:#888;">Cada responsable de estado recibe únicamente el CSV de su entidad. No se cruzan datos entre estados.</p>
+    <button class="btn-cerrar" onclick="document.getElementById('modal-csv').classList.remove('visible')">Entendido</button>
+  </div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+let map, markersLayer, todosDispositivos = [], markerRefs = {}, soloV51 = false;
+
+// ── MAPA ──────────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', {zoomControl:true}).setView([23.6, -102.5], 5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap © CARTO', maxZoom:19, subdomains:'abcd'
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+
+  fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json')
+    .then(r => r.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style:{color:'#6D1130',weight:1.5,fillColor:'#f9f0f3',fillOpacity:0.18},
+        onEachFeature:(f,l) => {
+          if (f.properties && f.properties.name)
+            l.bindTooltip(f.properties.name, {permanent:false, direction:'center'});
+        }
+      }).addTo(map);
+    }).catch(()=>{});
+}
+
+// ── ICONOS ────────────────────────────────────────────────────────────────────
+function makeIcon(estatus, v51pend) {
+  const colMap = {activo:'#1a7a45', offline:'#b83232', caducada:'#555555', robado:'#d45500'};
+  const c = colMap[estatus] || '#6D1130';
+  const ring = v51pend ? `<circle cx="13" cy="4" r="5" fill="none" stroke="#1a5fa8" stroke-width="2.5"/>` : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.25 14 22 14 22S28 23.25 28 14C28 6.27 21.73 0 14 0z" fill="${c}"/>
+    <rect x="7" y="7" width="14" height="17" rx="2" fill="white"/>
+    <rect x="10" y="5.5" width="8" height="2" rx="1" fill="white"/>
+    <rect x="9" y="10" width="10" height="1.5" rx="0.5" fill="${c}"/>
+    <rect x="9" y="13" width="10" height="1.5" rx="0.5" fill="${c}"/>
+    <rect x="9" y="16" width="6" height="1.5" rx="0.5" fill="${c}"/>
+    ${ring}
+  </svg>`;
+  return L.divIcon({html:svg, iconSize:[28,36], iconAnchor:[14,36], popupAnchor:[0,-38], className:''});
+}
+
+// ── POPUP ─────────────────────────────────────────────────────────────────────
+function makePopup(d) {
+  const colMap = {activo:'#1a7a45', offline:'#b83232', caducada:'#555555', robado:'#d45500'};
+  const lblMap = {activo:'ACTIVO', offline:'OFFLINE', caducada:'LIC. CADUCADA', robado:'ROBADO/EXTRAVIADO'};
+  const c = colMap[d.estatus] || '#6D1130';
+  const ubicTxt = (d.lat && d.lat!=='')
+    ? `${parseFloat(d.lat).toFixed(5)}, ${parseFloat(d.lng).toFixed(5)}`
+    : 'Sin GPS registrado';
+  const gpsTs = d.gps_ts ? `<tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">GPS · Hora</td>
+      <td style="font-family:monospace;color:#555;font-size:9px;">${d.gps_ts}</td></tr>` : '';
+  const v51Row = d.v51_asignada === 'SI'
+    ? `<tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">Sumate V51</td>
+       <td style="color:${d.v51_no_instalada==='SI'?'#1a5fa8':'#1a7a45'};font-weight:700;font-size:10px;">
+         ${d.v51_no_instalada==='SI'?'⚠ Pendiente de instalación':'✓ Instalada'}</td></tr>` : '';
+  const incRow = d.incidencia
+    ? `<tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">Incidencia</td>
+       <td style="color:#d45500;font-weight:700;">${d.incidencia}</td></tr>` : '';
+
+  return `<div style="font-family:'Barlow',sans-serif;min-width:230px;border-radius:6px;overflow:hidden;">
+    <div style="background:${c};color:white;padding:6px 12px;font-size:10px;font-weight:700;letter-spacing:0.5px;">
+      ● ${lblMap[d.estatus]||d.estatus.toUpperCase()} — MDM
+    </div>
+    <div style="padding:10px 12px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#6D1130;margin-bottom:4px;">${d.etiqueta||d.serie}</div>
+      <table style="font-size:10px;width:100%;border-collapse:collapse;">
+        <tr><td style="color:#bbb;padding:2px 0;width:65px;font-size:9px;text-transform:uppercase;">IMEI</td>
+            <td style="font-family:monospace;color:#333;">${d.imei}</td></tr>
+        <tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">N° Serie</td>
+            <td style="font-family:monospace;color:#333;font-size:9px;">${d.serie}</td></tr>
+        <tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">Teléfono</td>
+            <td style="color:#333;">${d.telefono||'—'}</td></tr>
+        <tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">Visto</td>
+            <td style="color:#333;">${d.visto||'—'}</td></tr>
+        <tr><td style="color:#bbb;padding:2px 0;font-size:9px;text-transform:uppercase;">Ubicación GPS</td>
+            <td style="font-family:monospace;color:#555;font-size:9px;">${ubicTxt}</td></tr>
+        ${gpsTs}${v51Row}${incRow}
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── TARJETA PANEL ─────────────────────────────────────────────────────────────
+function makeCard(d, idx) {
+  const visto = d.visto || '';
+  let diasCl, diasTxt;
+  if (d.estatus === 'caducada') {
+    diasCl = 'vencida'; diasTxt = 'Licencia caducada' + (visto ? ' · ' + visto : '');
+  } else if (d.estatus === 'robado') {
+    diasCl = 'danger'; diasTxt = (d.incidencia || 'Incidencia') + (visto ? ' · ' + visto : '');
+  } else {
+    diasCl = 'ok'; diasTxt = visto ? visto : 'Sin datos de conexión';
+  }
+  const tieneGps = d.lat && d.lat !== '';
+  const gpsBadge = !tieneGps ? `<span class="badge-nogps">Sin GPS</span>` : '';
+  const v51Badge = (d.v51_asignada==='SI' && d.v51_no_instalada==='SI')
+    ? `<span class="badge v51">V51 Pend.</span>` : '';
+  const ubicTxt = tieneGps
+    ? `${parseFloat(d.lat).toFixed(5)}, ${parseFloat(d.lng).toFixed(5)}`
+    : 'Sin GPS registrado';
+  const v51Row = (d.v51_asignada==='SI' && d.v51_no_instalada==='SI')
+    ? `<span class="card-lbl">V51</span><span class="card-val v51-pend">⚠ Pendiente de instalación</span>` : '';
+  const incRow = d.incidencia
+    ? `<span class="card-lbl">Incidencia</span><span class="card-val" style="color:#d45500;font-weight:700;">${d.incidencia}</span>` : '';
+  const v51pend = d.v51_asignada==='SI' && d.v51_no_instalada==='SI';
+
+  return `<div class="dispositivo-card ${d.estatus}${!tieneGps?' sin-gps':''}${v51pend?' v51-pendiente':''}" data-idx="${idx}" onclick="centrarEn(${idx})">
+    <div class="card-top">
+      <span class="card-estado">${d.etiqueta || d.serie}</span>
+      <div>${v51Badge}<span class="badge ${d.estatus}">${d.estatus==='caducada'?'Lic. Caducada':d.estatus==='robado'?d.incidencia||'Robado':d.estatus}</span>${gpsBadge}</div>
+    </div>
+    <div class="card-dias ${diasCl}">${diasTxt}</div>
+    <div class="card-datos">
+      <span class="card-lbl">IMEI</span><span class="card-val">${d.imei}</span>
+      <span class="card-lbl">Serie</span><span class="card-val">${d.serie}</span>
+      <span class="card-lbl">GPS</span><span class="card-val lugar">${ubicTxt}</span>
+      ${v51Row}${incRow}
+    </div>
+  </div>`;
+}
+
+// ── DETERMINAR ESTATUS ────────────────────────────────────────────────────────
+function determinarEstatus(row) {
+  const inc = (row.incidencia || '').trim().toUpperCase();
+  if (inc === 'ROBADO' || inc === 'EXTRAVIADO') return 'robado';
+  const estado = (row['Estado'] || '').trim();
+  if (estado.toLowerCase().includes('licencia ha caducado')) return 'caducada';
+  if (estado.toLowerCase() === 'suministro') return 'caducada';
+  if (estado.toLowerCase().includes('inscrito') && !estado.toLowerCase().startsWith('no inscrito')) return 'activo';
+  if (estado.toLowerCase().includes('no inscrito')) return 'offline';
+  const visto = (row['Visto por última vez'] || '').trim();
+  if (!visto) return 'offline';
+  const m = visto.match(/^(\d+)([dhm])/);
+  if (m) {
+    const n = parseInt(m[1]);
+    const u = m[2];
+    const dias = u==='d' ? n : u==='h' ? n/24 : n/1440;
+    if (dias <= 3) return 'activo';
+    if (dias <= 30) return 'offline';
+    return 'caducada';
+  }
+  return 'activo';
+}
+
+// ── RENDERIZAR ────────────────────────────────────────────────────────────────
+function renderizar(lista) {
+  markersLayer.clearLayers();
+  markerRefs = {};
+  const panelEl = document.getElementById('lista-dispositivos');
+  panelEl.innerHTML = '';
+
+  lista.forEach((d, i) => {
+    const tieneGps = d.lat && d.lat !== '' && !isNaN(parseFloat(d.lat));
+    const v51pend = d.v51_asignada==='SI' && d.v51_no_instalada==='SI';
+    if (tieneGps) {
+      const marker = L.marker([parseFloat(d.lat), parseFloat(d.lng)], {icon: makeIcon(d.estatus, v51pend)});
+      marker.bindPopup(makePopup(d), {maxWidth:280});
+      marker.addTo(markersLayer);
+      markerRefs[i] = {marker, data:d};
+    }
+    panelEl.insertAdjacentHTML('beforeend', makeCard(d, i));
+  });
+
+  // Stats del subconjunto
+  const total      = lista.length;
+  const conGps     = lista.filter(d => d.lat && d.lat !== '').length;
+  const sinGps     = total - conGps;
+  const v51Pend    = lista.filter(d => d.v51_asignada==='SI' && d.v51_no_instalada==='SI').length;
+  const robados    = lista.filter(d => d.estatus==='robado').length;
+  const caducadas  = lista.filter(d => d.estatus==='caducada').length;
+
+  document.getElementById('st-total').textContent    = total;
+  document.getElementById('st-gps').textContent      = conGps;
+  document.getElementById('st-sin-gps').textContent  = sinGps;
+  document.getElementById('st-v51').textContent      = v51Pend;
+  document.getElementById('st-robados').textContent  = robados;
+  document.getElementById('st-caducada').textContent = caducadas;
+  document.getElementById('panel-count').textContent = `${lista.length} tabletas · clic para centrar`;
+  document.getElementById('ft-count').textContent    = `${lista.length} de ${todosDispositivos.length} tabletas`;
+}
+
+// ── CENTRAR ───────────────────────────────────────────────────────────────────
+function centrarEn(idx) {
+  document.querySelectorAll('.dispositivo-card').forEach(c=>c.classList.remove('selected'));
+  const card = document.querySelector(`.dispositivo-card[data-idx="${idx}"]`);
+  if (card) { card.classList.add('selected'); card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  const ref = markerRefs[idx];
+  if (!ref) { notificar('Esta tableta no tiene GPS registrado'); return; }
+  map.setView([parseFloat(ref.data.lat), parseFloat(ref.data.lng)], 15);
+  ref.marker.openPopup();
+}
+
+// ── TOGGLE V51 ────────────────────────────────────────────────────────────────
+function toggleV51() {
+  soloV51 = !soloV51;
+  document.getElementById('btn-v51').classList.toggle('active', soloV51);
+  filtrar();
+}
+
+// ── FILTRAR ───────────────────────────────────────────────────────────────────
+function filtrar() {
+  const q     = document.getElementById('buscar').value.toLowerCase();
+  const fest  = document.getElementById('f-estatus').value;
+  const fgps  = document.getElementById('f-gps').value;
+
+  const lista = todosDispositivos.filter(d => {
+    const coincideQ   = !q || [d.imei, d.serie, d.etiqueta||'', d.telefono||'']
+      .some(v => (v||'').toLowerCase().includes(q));
+    const coincideEst = !fest || d.estatus === fest;
+    const tieneGps    = d.lat && d.lat !== '';
+    const coincideGps = !fgps || (fgps==='con' && tieneGps) || (fgps==='sin' && !tieneGps);
+    const coincideV51 = !soloV51 || (d.v51_asignada==='SI' && d.v51_no_instalada==='SI');
+    return coincideQ && coincideEst && coincideGps && coincideV51;
+  });
+  renderizar(lista);
+}
+
+// ── CARGAR CSV ────────────────────────────────────────────────────────────────
+document.getElementById('file-csv').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true, encoding: 'UTF-8',
+    complete: (res) => procesarDatos(res.data, file.name),
+    error:    (err) => notificar('Error al leer CSV: ' + err.message)
+  });
+  this.value = '';
+});
+
+function procesarDatos(datos, nombre) {
+  if (!datos || datos.length === 0) { notificar('CSV vacío o sin datos válidos'); return; }
+
+  todosDispositivos = datos.map(row => {
+    const estatus = determinarEstatus(row);
+    return {
+      imei:          (row['IMEI/MEID'] || '').trim(),
+      serie:         (row['Número de serie'] || '').trim(),
+      etiqueta:      (row['Etiqueta del dispositivo'] || '').trim(),
+      telefono:      (row['Número de teléfono móvil'] || '').replace(/^\+/,'').trim(),
+      visto:         (row['Visto por última vez'] || '').trim(),
+      lat:           (row['lat'] || '').trim(),
+      lng:           (row['lng'] || '').trim(),
+      gps_ts:        (row['gps_ts'] || '').trim(),
+      v51_asignada:  (row['v51_asignada'] || 'NO').trim().toUpperCase(),
+      v51_no_instalada: (row['v51_no_instalada'] || 'NO').trim().toUpperCase(),
+      incidencia:    (row['incidencia'] || '').trim().toUpperCase(),
+      estado_mdm:    (row['Estado'] || '').trim(),
+      estatus:       estatus
+    };
+  });
+
+  // Titulo del panel con nombre del estado detectado del CSV
+  const primeraEtiqueta = todosDispositivos.find(d => d.etiqueta)?.etiqueta || '';
+  const m = primeraEtiqueta.match(/^\d+_([^_]+)/);
+  const estadoNombre = m ? m[1].replace(/_/g,' ') : nombre.replace(/\.csv$/i,'').replace(/^\d+_/,'');
+  document.getElementById('panel-estado-title').textContent = estadoNombre || 'Tabletas';
+
+  renderizar(todosDispositivos);
+
+  const conGps = todosDispositivos.filter(d => d.lat && d.lat !== '' && !isNaN(parseFloat(d.lat)));
+  if (conGps.length > 0) {
+    map.fitBounds(conGps.map(d=>[parseFloat(d.lat),parseFloat(d.lng)]), {padding:[40,40], maxZoom:12});
+  }
+
+  document.getElementById('splash').classList.add('oculto');
+  document.getElementById('info-csv').textContent = `✓ ${nombre} · ${todosDispositivos.length} tabletas`;
+  document.getElementById('txt-fecha').textContent = new Date().toLocaleString('es-MX');
+  notificar(`${todosDispositivos.length} tabletas cargadas`);
+}
+
+function notificar(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+window.addEventListener('load', () => {
+  initMap();
+  document.getElementById('txt-fecha').textContent = new Date().toLocaleString('es-MX');
+});
+</script>
+</body>
+</html>
